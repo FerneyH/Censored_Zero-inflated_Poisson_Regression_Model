@@ -17,45 +17,44 @@ library(scales)
 #----
 Zipc.maxlik<-function(X,Z,Y,status,beta){
   P<-ncol(X);s<-ncol(Z);n<-nrow(X)
-  f<-function(C,mu){dpois(C,mu)} #Funcion de densidad Poisson
-  I<-as.numeric(Y==0) # Indicadora de y_i=0
-  I.<-1-I # Indicadora de y_i>0
-  di<-status # Datos censurados, en status 0 representa censura
-  C<-Y*(1-status) # Constantes de censura 
-  # Vector de derivadas 
+  f<-function(C,mu){dpois(C,mu)} # Density
+  I<-as.numeric(Y==0) # Indicator y_i=0
+  I.<-1-I # Indicator
+  di<-status # Censored data, status 0 
+  C<-Y*(1-status) # Ci
+  # Gradient 
   grad<-function(beta){
-    mu<-exp(X%*%beta[1:P]) # Generando mui
-    w<- exp(Z%*%beta[(P+1):(P+s)]) # Generando wi 
+    mu<-exp(X%*%beta[1:P]) # mui
+    w<- exp(Z%*%beta[(P+1):(P+s)]) # wi 
     b<-1/(w+1) 
     t<-1/(w+f(0,mu))
-    pi<-f(C,mu)/(1-ppois(C-1,mu)) # Phi teórico
+    pi<-f(C,mu)/(1-ppois(C-1,mu)) # Phi 
     U1<- t(Z)%*%(di*w*t*I - w*b) 
     U2<- t(X)%*%(-di*f(0,mu)*mu*t*I+di*(Y-mu)*I. + (1-di)*C*pi)
-    as.vector(rbind(U2,U1))} # Vector de derivadas total
+    as.vector(rbind(U2,U1))} 
   
-  # Matriz Hessiana
+  # Hessian
   Hess<-function(beta){
-    mu<-exp(X%*%beta[1:P]) # Generando mui
-    w<- exp(Z%*%beta[(P+1):(P+s)]) # Generando wi 
+    mu<-exp(X%*%beta[1:P]) # mui
+    w<- exp(Z%*%beta[(P+1):(P+s)]) # wi 
     b<-1/(w+1) 
     t<-1/(w+f(0,mu))
-    pi<-f(C,mu)/(1-ppois(C-1,mu)) # Phi teorico
+    pi<-f(C,mu)/(1-ppois(C-1,mu)) # Phi 
     R<-diag(as.vector(di*f(0,mu)*w*t^2*I-w*b^2))
-    J11<-t(Z)%*%R%*%Z # Segundas derivadas para gamma
+    J11<-t(Z)%*%R%*%Z # Second derivatives for gamma
     S<-diag(as.vector(-di*(f(0,mu)*mu*(w+f(0,mu)-w*mu)*t^2*I+mu*I.)+
                         (1-di)*C*((C-mu)*pi-C*pi^2)))
-    J22<-t(X)%*%S%*%X # Segundas derivadas para beta
+    J22<-t(X)%*%S%*%X # Second derivatives for beta
     K<-diag(as.vector(di*f(0,mu)*mu*w*t^2*I))
-    J12<-t(Z)%*%K%*%X # Segundas derivadas cruzadas
-    as.matrix(rbind(cbind(J22,t(J12)),cbind(J12,J11)))} # Matriz Hessiana
+    J12<-t(Z)%*%K%*%X # Second derivatives (Cross)
+    as.matrix(rbind(cbind(J22,t(J12)),cbind(J12,J11)))} # Hessian
   
-  # Funcion log-likelihood 
+  # log-likelihood 
   log.L<-function(beta){
     sum(di*(log(exp(Z%*%beta[(P+1):(P+s)])+f(0,exp(X%*%beta[1:P])))*I+log(f(Y,exp(X%*%beta[1:P])))*I.)
         +(1-di)*log(1-ppois(C-1,exp(X%*%beta[1:P])))-log(1+exp(Z%*%beta[(P+1):(P+s)])))}
   summary(maxLik(log.L,grad,Hess,start = beta))
 }
-
 ################################################################################
 #                              Variable Selection
 ################################################################################
