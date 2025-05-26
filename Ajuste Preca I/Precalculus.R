@@ -1,5 +1,5 @@
 ################################################################################
-#                                   Paquetes
+#                                   Packages
 ################################################################################
 #----
 library(dplyr)
@@ -12,7 +12,7 @@ library(caret)
 library(ggplot2)
 library(scales)
 ################################################################################
-#                       Funcion para realizar el ajuste 
+#                                     Fit
 ################################################################################
 #----
 Zipc.maxlik<-function(X,Z,Y,status,beta){
@@ -55,14 +55,9 @@ Zipc.maxlik<-function(X,Z,Y,status,beta){
         +(1-di)*log(1-ppois(C-1,exp(X%*%beta[1:P])))-log(1+exp(Z%*%beta[(P+1):(P+s)])))}
   summary(maxLik(log.L,grad,Hess,start = beta))
 }
+
 ################################################################################
-#                           Estudiantes de Preca I
-################################################################################
-#----
-DATA_MATE3171 <- read_csv("C:/Users/ferch/OneDrive/Escritorio/Code Thesis/Data filtrada/datapreca.csv")
-attach(DATA_MATE3171)
-################################################################################
-#        Seleccion de covariables que se utilizan y eliminando Na
+#                              Variable Selection
 ################################################################################
 #----
 DATA_MATE3171<-DATA_MATE3171[,c(1,4:6,9:12,20,21)]
@@ -70,27 +65,27 @@ DATA_MATE3171<-na.omit(DATA_MATE3171)
 DATA_MATE3171 <- DATA_MATE3171 %>%filter(IGS != 0,`APR MATE`!= 0,`GPA ESC SUP`!= 0)
 attach(DATA_MATE3171)
 ################################################################################
-#                       Variables que generan mejor AIC           
+#                                     AIC           
 ################################################################################
 #----
 DATA_MATE3171<-DATA_MATE3171[,c(1:4,6:8,10)] 
-DATA_MATE3171$`TIPO ESC`<-relevel(as.factor(DATA_MATE3171$`TIPO ESC`),ref="PUBLICA") # (Opcional) Nivel de referencia publica
+DATA_MATE3171$`TIPO ESC`<-relevel(as.factor(DATA_MATE3171$`TIPO ESC`),ref="PUBLICA") # (Optional) Reference level public 
 DATA_MATE3171$`GENERO`<-as.factor(DATA_MATE3171$`GENERO`)
 DATA_MATE3171$`ANO ADMISION`<-as.factor(DATA_MATE3171$`ANO ADMISION`)
 attach(DATA_MATE3171)
 ################################################################################
-#                        correlacion de las variables 
+#                               Correlation
 cor(data.matrix(DATA_MATE3171))
 ################################################################################
 ################################################################################
-#                 Valor inicial para los parametros en el ajuste
+#                             Initial values 
 ################################################################################
 #----
 fit<-zeroinfl(Fallas ~.|.-IGS, data=DATA_MATE3171 )
 summary(fit)
 betanew<-coef(fit)
 ################################################################################
-#                        Ajuste con nueva Hessiana
+#                             Hessian
 ################################################################################
 #----
 status<-1-Censura
@@ -99,7 +94,7 @@ Z<-model.matrix(~.-Fallas-IGS,data=DATA_MATE3171) # Matrix para el modelo binari
 fit<-Zipc.maxlik(X,Z,Fallas,status,betanew)
 fit
 ################################################################################
-#                                  Prediccion 
+#                             Prediction
 ################################################################################
 #----
 beta<-as.vector(coef(fit)[,1])
@@ -119,7 +114,7 @@ for (i in 1:length(pii)) {
 }
 
 ################################################################################
-#               Matriz de confusion con probabilidad predicha
+#                           Confusion Matrix
 ################################################################################
 prob
 obs.zero <- Fallas<1;preds <-prob[,1]
@@ -127,14 +122,14 @@ P.corte<-0.7
 preds.zero <- preds >= P.corte
 confusionMatrix(as.factor(preds.zero),as.factor(obs.zero))
 ################################################################################
-#             Matriz de confusion con probabilidad P(y<2)
+#                                P(y<2)
 ################################################################################
 obs.zero <- Fallas<2;preds <-prob[,1]+prob[,2]
 P.corte<-0.4
 preds.zero <- preds >= P.corte
 confusionMatrix(as.factor(preds.zero),as.factor(obs.zero))
 ################################################################################
-#             Matriz de confusion con media predicha
+#                          Confusion Matrix
 ################################################################################
 U.corte<-0.8
 predsmu.zero <- resp <= U.corte
